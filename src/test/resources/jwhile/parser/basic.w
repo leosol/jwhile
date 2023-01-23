@@ -1,0 +1,17 @@
+a = 100+20;
+a = 10+20+30;
+a = 10+b;
+a = b+10;
+a = b;
+b = 150 * 2 + 10;
+c = true;
+d = false;
+e = null;
+a = 1>1;
+k = a == 1;
+k = a == b;
+k = a == true;
+k = 1 > 1;
+print 10;
+print b;
+read a;
