@@ -105,5 +105,21 @@ public class EntityFactory {
 		this.labelCatalog.put(a.getLabel(), a);
 		return a;
 	}
+	
+	public IfStmt createIfStmt(Exp expression, String expressionText, Stmt trueBranch, Stmt falseBranch) {
+		Label label = this.labelGenerator.getNextLabel("condition");
+		Condition c = new Condition(label, expression, expressionText);
+		this.labelCatalog.put(label, c);
+		IfStmt ifStmt = new IfStmt(c, trueBranch, falseBranch);
+		return ifStmt;
+	}
+
+	public WhileStmt createWhileStmt(Exp expression, String expressionText, Stmt body) {
+		Label label = this.labelGenerator.getNextLabel("condition");
+		Condition c = new Condition(label, expression, expressionText);
+		this.labelCatalog.put(label, c);
+		WhileStmt res = new WhileStmt(c, body);
+		return res;
+	}
 
 }

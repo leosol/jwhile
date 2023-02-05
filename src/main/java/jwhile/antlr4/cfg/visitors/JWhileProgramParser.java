@@ -10,12 +10,14 @@ import jwhile.antlr4.cfg.entities.BExp;
 import jwhile.antlr4.cfg.entities.Entity;
 import jwhile.antlr4.cfg.entities.Exp;
 import jwhile.antlr4.cfg.entities.Identifier;
+import jwhile.antlr4.cfg.entities.IfStmt;
 import jwhile.antlr4.cfg.entities.Literal;
 import jwhile.antlr4.cfg.entities.LiteralType;
 import jwhile.antlr4.cfg.entities.Program;
 import jwhile.antlr4.cfg.entities.SeqStmt;
 import jwhile.antlr4.cfg.entities.SkipStmt;
 import jwhile.antlr4.cfg.entities.Stmt;
+import jwhile.antlr4.cfg.entities.WhileStmt;
 import jwhile.antlr4.generated.WhileBaseVisitor;
 import jwhile.antlr4.generated.WhileParser.AExpContext;
 import jwhile.antlr4.generated.WhileParser.AExpLeftHandContext;
@@ -25,9 +27,13 @@ import jwhile.antlr4.generated.WhileParser.BExpContext;
 import jwhile.antlr4.generated.WhileParser.BExpLeftHandContext;
 import jwhile.antlr4.generated.WhileParser.BExpRightHandContext;
 import jwhile.antlr4.generated.WhileParser.ExpressionContext;
+import jwhile.antlr4.generated.WhileParser.IfThenElseStatementContext;
+import jwhile.antlr4.generated.WhileParser.IfThenStatementContext;
 import jwhile.antlr4.generated.WhileParser.ProgramContext;
 import jwhile.antlr4.generated.WhileParser.StmtContext;
 import jwhile.antlr4.generated.WhileParser.StmtsContext;
+import jwhile.antlr4.generated.WhileParser.WhileStatementContext;
+import jwhile.antlr4.interpreter.Value;
 
 public class JWhileProgramParser extends WhileBaseVisitor<Entity> {
 
@@ -222,6 +228,32 @@ public class JWhileProgramParser extends WhileBaseVisitor<Entity> {
 			return visit(ctx.bExp());
 		}
 		return super.visitBExpRightHand(ctx);
+	}
+
+	@Override
+	public Entity visitIfThenStatement(IfThenStatementContext ctx) {
+		Exp exp = (Exp) visit(ctx.expression());
+		Stmt trueBranch = (Stmt) visit(ctx.ifTrueStmts());
+		IfStmt ifStmt = this.program.getEntityFactory().createIfStmt(exp, ctx.expression().getText(), trueBranch, null);
+		return ifStmt;
+	}
+
+	@Override
+	public Entity visitIfThenElseStatement(IfThenElseStatementContext ctx) {
+		Exp exp = (Exp) visit(ctx.expression());
+		Stmt trueBranch = (Stmt) visit(ctx.ifTrueStmts());
+		Stmt falseBranch = (Stmt) visit(ctx.ifFalseStmts());
+		IfStmt ifStmt = this.program.getEntityFactory().createIfStmt(exp, ctx.expression().getText(), trueBranch,
+				falseBranch);
+		return ifStmt;
+	}
+
+	@Override
+	public Entity visitWhileStatement(WhileStatementContext ctx) {
+		Exp exp = (Exp) visit(ctx.expression());
+		Stmt body = (Stmt) visit(ctx.stmts());
+		WhileStmt wStmt = this.program.getEntityFactory().createWhileStmt(exp, ctx.expression().getText(), body);
+		return wStmt;
 	}
 
 	public Program getProgram() {

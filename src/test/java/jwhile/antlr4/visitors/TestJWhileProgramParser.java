@@ -5,16 +5,13 @@ import java.io.IOException;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jwhile.ShowGuiTest;
-import jwhile.antlr4.cfg.JWhileFlowVisitor;
 import jwhile.antlr4.cfg.entities.Entity;
 import jwhile.antlr4.cfg.entities.Program;
-import jwhile.antlr4.cfg.store.CFGStoreNeo4jImpl;
 import jwhile.antlr4.cfg.visitors.JWhileProgramParser;
 import jwhile.antlr4.generated.WhileLexer;
 import jwhile.antlr4.generated.WhileParser;
@@ -24,15 +21,6 @@ import jwhile.interpreter.TestAExp;
 public class TestJWhileProgramParser extends ShowGuiTest {
 	private static Logger logger = LoggerFactory.getLogger(TestAExp.class);
 	private boolean SHOW_GUI = true;
-	private CFGStoreNeo4jImpl cfgStore;
-
-	public TestJWhileProgramParser() {
-		String url = "neo4j://localhost:7687";
-		String user = "neo4j";
-		String password = "0123456789";
-		this.cfgStore = new CFGStoreNeo4jImpl(url, user, password);
-		this.cfgStore.openSession();
-	}
 
 	@Test
 	public void testAddition() throws IOException, InterruptedException {

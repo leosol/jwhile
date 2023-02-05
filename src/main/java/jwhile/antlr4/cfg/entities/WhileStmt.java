@@ -30,7 +30,7 @@ public class WhileStmt extends Stmt implements FlowEntity {
 	public List<Label> getFinalLabels() {
 		List<Label> finals = new LinkedList<Label>();
 		finals.add(getInitLabel());
-		finals.addAll(body.getFinalLabels());
+//		finals.addAll(body.getFinalLabels());
 		return finals;
 	}
 

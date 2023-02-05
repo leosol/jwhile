@@ -19,12 +19,13 @@ import jwhile.antlr4.generated.WhileParser;
 import jwhile.antlr4.utils.StandardErrorListener;
 import jwhile.interpreter.TestAExp;
 
-public class TestNeo4jPersistence extends ShowGuiTest {
+public class TestUsedForDevelopment extends ShowGuiTest {
+
 	private static Logger logger = LoggerFactory.getLogger(TestAExp.class);
-	private boolean SHOW_GUI = true;
+	private boolean SHOW_GUI = false;
 	private Neo4jProgramPersistenceStore store;
 
-	public TestNeo4jPersistence() {
+	public TestUsedForDevelopment() {
 		String url = "neo4j://localhost:7687";
 		String user = "neo4j";
 		String password = "0123456789";
@@ -36,7 +37,12 @@ public class TestNeo4jPersistence extends ShowGuiTest {
 	public void testAddition() throws IOException, InterruptedException {
 		// @formatter:off
 		String[] simpleStatements = {
-				"y = x; z = 1; while(y>1){z=z*y; y=y-1;}; y=0;"}; //a = 1; b = a; c = a + a; d = a + 1; e = 1 + a; f = 1 + 2 + 3;
+				"a = 1; b = a; c = a + a; d = a + 1; e = 1 + a; f = 1 + 2 + 3;",
+				"a = true; b = a; c = a && a; d = a || false; e = false && a;", 
+				"a = 1 == 1; b = a == 1; c = 1 == a; d = 10 < 20; e = 4 >= 4;",
+				"a = 0; b = 0; if(true){a=1; b=1;}; if(false){a=1; b=1;} else {a=2; b=2;};",
+				"y = x; z = 1; while(y>1){z=z*y; y=y-1;}; y=0;"
+				};
 		// @formatter:on
 
 		for (int i = 0; i < simpleStatements.length; i++) {
@@ -64,4 +70,5 @@ public class TestNeo4jPersistence extends ShowGuiTest {
 			logger.info("Finished Flow Visitor");
 		}
 	}
+
 }

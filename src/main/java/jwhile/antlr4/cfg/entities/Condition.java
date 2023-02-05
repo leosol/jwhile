@@ -7,9 +7,11 @@ public class Condition extends Entity implements LabledEntity {
 
 	private Label label;
 	private String text;
+	private Exp exp;
 
-	protected Condition(Label label, String text) {
+	protected Condition(Label label, Exp exp, String text) {
 		this.label = label;
+		this.exp = exp;
 		this.text = text;
 	}
 
@@ -30,6 +32,14 @@ public class Condition extends Entity implements LabledEntity {
 		this.label = label;
 	}
 
+	public Exp getExp() {
+		return exp;
+	}
+
+	public void setExp(Exp exp) {
+		this.exp = exp;
+	}
+
 	@Override
 	public String toString() {
 		return getName() + " label: " + label + " text " + text;
@@ -38,7 +48,9 @@ public class Condition extends Entity implements LabledEntity {
 	@Override
 	public Set<UsageEdge> getUsages() {
 		Set<UsageEdge> usages = new HashSet<UsageEdge>();
+		usages.add(this.getProgram().getEntityFactory().getUsageEdge(this, exp, ExpressionUsageEdge.class));
+		usages.addAll(exp.getUsages());
 		return usages;
 	}
-	
+
 }

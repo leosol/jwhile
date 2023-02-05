@@ -1,9 +1,7 @@
 package jwhile.antlr4.cfg.entities;
 
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 public class IfStmt extends Stmt {
 
@@ -38,7 +36,10 @@ public class IfStmt extends Stmt {
 	public List<Label> getFinalLabels() {
 		List<Label> finals = new LinkedList<Label>();
 		finals.addAll(this.trueBranch.getFinalLabels());
-		finals.addAll(this.falseBranch.getFinalLabels());
+		if (falseBranch != null)
+			finals.addAll(this.falseBranch.getFinalLabels());
+		else
+			finals.add(this.c.getLabel());
 		return finals;
 	}
 
@@ -46,13 +47,15 @@ public class IfStmt extends Stmt {
 	public List<FlowEdge> flow() {
 		LinkedList<FlowEdge> edges = new LinkedList<FlowEdge>();
 		edges.addAll(trueBranch.flow());
-		edges.addAll(falseBranch.flow());
+		if (falseBranch != null)
+			edges.addAll(falseBranch.flow());
 		Label l = c.getLabel();
 		edges.add(new FlowEdge(l, trueBranch.getInitLabel()));
-		edges.add(new FlowEdge(l, falseBranch.getInitLabel()));
+		if (falseBranch != null)
+			edges.add(new FlowEdge(l, falseBranch.getInitLabel()));
 		return edges;
 	}
-	
+
 	@Override
 	public String toString() {
 		return getName() + " c: " + c + " s1 " + trueBranch + " s2 " + falseBranch;

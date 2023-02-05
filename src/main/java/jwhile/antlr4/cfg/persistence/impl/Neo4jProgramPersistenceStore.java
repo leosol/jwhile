@@ -163,7 +163,7 @@ public class Neo4jProgramPersistenceStore implements ProgramPersistenceStore {
 
 			@Override
 			public void caseNonTrivialBooleanExpression(NonTrivialBooleanExpression entity) {
-				super.caseNonTrivialBooleanExpression(entity);
+				Neo4jProgramPersistenceStore.this.createNonTrivialBooleanExpression(entity);
 			}
 
 			@Override
@@ -331,7 +331,7 @@ public class Neo4jProgramPersistenceStore implements ProgramPersistenceStore {
 		t0.close();
 		Transaction t = session.beginTransaction();
 		Query q1 = new Query("CREATE (n:TrivialBExp) SET n.programId=$programId, n.text=$text, n.id=$id return n",
-				parameters("text", exp.getText(), "id", exp.getId()));
+				parameters("programId", exp.getProgram().getProgramId(), "text", exp.getText(), "id", exp.getId()));
 		Result res = t.run(q1);
 		boolean okay = false;
 		if (res.hasNext()) {
