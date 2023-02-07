@@ -2,6 +2,7 @@ package jwhile.antlr4.cfg.persistence.impl;
 
 import static org.neo4j.driver.Values.parameters;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
@@ -18,6 +19,7 @@ import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.types.Node;
 import org.neo4j.driver.util.Pair;
 
 import jwhile.antlr4.cfg.entities.AssignmentEdge;
@@ -59,7 +61,7 @@ public class Neo4jProgramPersistenceStore implements ProgramPersistenceStore {
 
 	@Override
 	public void openSession() {
-		Config config = Config.builder().withLogging(Logging.console(Level.ALL)).build();
+		Config config = Config.builder().withLogging(Logging.console(Level.OFF)).build();
 		driver = GraphDatabase.driver(url, AuthTokens.basic(user, password), config);
 		session = driver.session();
 	}
@@ -620,4 +622,346 @@ public class Neo4jProgramPersistenceStore implements ProgramPersistenceStore {
 		t.commit();
 		t.close();
 	}
+
+	@Override
+	public void clearDatabase() {
+		Transaction transaction = session.beginTransaction();
+		Query q1 = new Query("match(n) detach delete n");
+		transaction.run(q1);
+		transaction.commit();
+		transaction.close();
+	}
+
+	@Override
+	public List<org.javatuples.Pair<Node, Node>> findFlow(String programId) {
+		return doFindFlow(programId, false);
+	}
+
+	@Override
+	public List<org.javatuples.Pair<Node, Node>> findFlowR(String programId) {
+		return doFindFlow(programId, true);
+	}
+
+	private List<org.javatuples.Pair<Node, Node>> doFindFlow(String programId, boolean reverse) {
+		Transaction transaction = session.beginTransaction();
+		Query q1 = new Query(
+				"match(n) -[r:FlowEdge]->(t) " + "where n.programId=t.programId and n.programId=$programId return n,t",
+				parameters("programId", programId));
+		Result res = transaction.run(q1);
+		List<org.javatuples.Pair<Node, Node>> out = new LinkedList<org.javatuples.Pair<Node, Node>>();
+		while (res.hasNext()) {
+			Record record = res.next();
+			List<Pair<String, Value>> values = record.fields();
+			Pair<String, Value> n = values.get(0);
+			Pair<String, Value> t = values.get(1);
+			Node nodeValueN = (Node) n.value().asNode();
+			Node nodeValueT = (Node) t.value().asNode();
+			if (!reverse) {
+				out.add(new org.javatuples.Pair<Node, Node>(nodeValueN, nodeValueT));
+			} else {
+				out.add(new org.javatuples.Pair<Node, Node>(nodeValueT, nodeValueN));
+			}
+		}
+		transaction.commit();
+		transaction.close();
+		return out;
+	}
+
+	@Override
+	public List<org.javatuples.Pair<Node, Node>> findAssignments(String programId) {
+		Transaction transaction = session.beginTransaction();
+		Query q1 = new Query(
+				"match(a:AssignmentStmt)-[r:AssignmentEdge]->(i:Identifier) where a.programId=i.programId and a.programId=$programId return a,i",
+				parameters("programId", programId));
+		Result res = transaction.run(q1);
+		List<org.javatuples.Pair<Node, Node>> out = new LinkedList<org.javatuples.Pair<Node, Node>>();
+		while (res.hasNext()) {
+			Record record = res.next();
+			List<Pair<String, Value>> values = record.fields();
+			Pair<String, Value> n = values.get(0);
+			Pair<String, Value> t = values.get(1);
+			Node nodeValueN = (Node) n.value().asNode();
+			Node nodeValueT = (Node) t.value().asNode();
+			out.add(new org.javatuples.Pair<Node, Node>(nodeValueN, nodeValueT));
+		}
+		transaction.commit();
+		transaction.close();
+		return out;
+	}
+
+	@Override
+	public List<org.javatuples.Pair<Node, Node>> findNonTrivialExpressions(String programId) {
+		Transaction transaction = session.beginTransaction();
+		Query q1 = new Query(
+				"match(n)<-[r:ExpressionUsageEdge]-(s) where (n:NonTrivialAExp or n:NonTrivialComparisonExpression or n:NonTrivialBooleanExpression or n:NonTrivialBExp) and ( n.programId=s.programId and n.programId=$programId ) return s,n;",
+				parameters("programId", programId));
+		Result res = transaction.run(q1);
+		List<org.javatuples.Pair<Node, Node>> out = new LinkedList<org.javatuples.Pair<Node, Node>>();
+		while (res.hasNext()) {
+			Record record = res.next();
+			List<Pair<String, Value>> values = record.fields();
+			Pair<String, Value> n = values.get(0);
+			Pair<String, Value> t = values.get(1);
+			Node nodeValueN = (Node) n.value().asNode();
+			Node nodeValueT = (Node) t.value().asNode();
+			out.add(new org.javatuples.Pair<Node, Node>(nodeValueN, nodeValueT));
+		}
+		transaction.commit();
+		transaction.close();
+		return out;
+	}
+
+	@Override
+	public List<Node> findNonTrivalExpressions(String programId, Long nodeId) {
+		Transaction transaction = session.beginTransaction();
+		Query q1 = new Query(
+				"match(n)<-[r:ExpressionUsageEdge]-(s) where (n:NonTrivialAExp or n:NonTrivialComparisonExpression or n:NonTrivialBooleanExpression or n:NonTrivialBExp) and s.id=$nodeId and s.programId=$programId return n",
+				parameters("nodeId", nodeId, "programId", programId));
+		Result res = transaction.run(q1);
+		List<Node> out = new LinkedList<Node>();
+		while (res.hasNext()) {
+			Record record = res.next();
+			List<Pair<String, Value>> values = record.fields();
+			Pair<String, Value> n = values.get(0);
+			Node nodeValueN = (Node) n.value().asNode();
+			out.add(nodeValueN);
+		}
+		transaction.commit();
+		transaction.close();
+		return out;
+	}
+
+	@Override
+	public List<Node> findTrivialExpressions(String programId, Long nodeId) {
+		Transaction transaction = session.beginTransaction();
+		Query q1 = new Query(
+				"match(n)<-[r:ExpressionUsageEdge]-(s) where (n:TrivialAExp or n:TrivialBExp) and s.id=$nodeId and s.programId=$programId return n",
+				parameters("nodeId", nodeId, "programId", programId));
+		Result res = transaction.run(q1);
+		List<Node> out = new LinkedList<Node>();
+		while (res.hasNext()) {
+			Record record = res.next();
+			List<Pair<String, Value>> values = record.fields();
+			Pair<String, Value> n = values.get(0);
+			Node nodeValueN = (Node) n.value().asNode();
+			out.add(nodeValueN);
+		}
+		transaction.commit();
+		transaction.close();
+		return out;
+	}
+
+	@Override
+	public List<Node> findExpressionsIdentifiers(String programId, Long nodeId) {
+		List<Node> out = new LinkedList<Node>();
+		List<Node> nonTrivials = this.findNonTrivalExpressions(programId, nodeId);
+		List<Node> trivials = this.findTrivialExpressions(programId, nodeId);
+		for (Node node : nonTrivials) {
+			out.addAll(this.findNonTrivialExpressionIdentifiers(programId, node.get("id").asLong()));
+		}
+		for (Node node : trivials) {
+			out.addAll(this.findTrivialExpressionIdentifiers(programId, node.get("id").asLong()));
+		}
+		return out;
+	}
+
+	@Override
+	public List<Node> findNonTrivalExpressionsByIdentifier(String programId, String identifierText) {
+		Transaction transaction = session.beginTransaction();
+		Query q1 = new Query(
+				"match(n)<-[:IdentifierUsageEdge]-(m)<-[*1]-(e)  where n.programId=$programId and n.text=$identifierText return e",
+				parameters("identifierText", identifierText, "programId", programId));
+		Result res = transaction.run(q1);
+		List<Node> out = new LinkedList<Node>();
+		while (res.hasNext()) {
+			Record record = res.next();
+			List<Pair<String, Value>> values = record.fields();
+			Pair<String, Value> n = values.get(0);
+			Node nodeValueN = (Node) n.value().asNode();
+			out.add(nodeValueN);
+		}
+		transaction.commit();
+		transaction.close();
+		return out;
+	}
+
+	@Override
+	public List<Node> findAssignmentsIdentifiers(String programId, Long nodeId) {
+		Transaction transaction = session.beginTransaction();
+		Query q1 = new Query(
+				"match(n:Identifier)-[*1]-(s:AssignmentStmt) where n.programId=$programId and s.id=$nodeId return n",
+				parameters("nodeId", nodeId, "programId", programId));
+		Result res = transaction.run(q1);
+		List<Node> out = new LinkedList<Node>();
+		while (res.hasNext()) {
+			Record record = res.next();
+			List<Pair<String, Value>> values = record.fields();
+			Pair<String, Value> n = values.get(0);
+			Node nodeValueN = (Node) n.value().asNode();
+			out.add(nodeValueN);
+		}
+		transaction.commit();
+		transaction.close();
+		return out;
+	}
+
+	@Override
+	public List<Node> findNonTrivialExpressionIdentifiers(String programId, Long nodeId) {
+		Transaction transaction = session.beginTransaction();
+		Query q1 = new Query(
+				"match(n)-[*]->(m:Identifier) where n.programId=$programId and (n:NonTrivialAExp or n:NonTrivialComparisonExpression or n:NonTrivialBooleanExpression or n:NonTrivialBExp) and n.id=$nodeId return m",
+				parameters("nodeId", nodeId, "programId", programId));
+		Result res = transaction.run(q1);
+		List<Node> out = new LinkedList<Node>();
+		while (res.hasNext()) {
+			Record record = res.next();
+			List<Pair<String, Value>> values = record.fields();
+			Pair<String, Value> n = values.get(0);
+			Node nodeValueN = (Node) n.value().asNode();
+			out.add(nodeValueN);
+		}
+		transaction.commit();
+		transaction.close();
+		return out;
+	}
+
+	@Override
+	public List<Node> findTrivialExpressionIdentifiers(String programId, Long nodeId) {
+		Transaction transaction = session.beginTransaction();
+		Query q1 = new Query(
+				"match(n)-[*]->(m:Identifier) where n.programId=$programId and (n:TrivialAExp or n:NonTrivialBExp) and n.id=$nodeId return m",
+				parameters("nodeId", nodeId, "programId", programId));
+		Result res = transaction.run(q1);
+		List<Node> out = new LinkedList<Node>();
+		while (res.hasNext()) {
+			Record record = res.next();
+			List<Pair<String, Value>> values = record.fields();
+			Pair<String, Value> n = values.get(0);
+			Node nodeValueN = (Node) n.value().asNode();
+			out.add(nodeValueN);
+		}
+		transaction.commit();
+		transaction.close();
+		return out;
+	}
+
+	@Override
+	public List<Node> findNonTrivalExpressionsWithoutIdentifier(String programId, Long nodeId, String identifier) {
+		List<Node> allNonTrivialExpressions = this.findNonTrivalExpressions(programId, nodeId);
+		List<Node> res = new LinkedList<Node>();
+		for (Node node : allNonTrivialExpressions) {
+			List<Node> identifiers = this.findNonTrivialExpressionIdentifiers(programId, node.get("id").asLong());
+			boolean containsAnyReference = false;
+			for (Node identifierNode : identifiers) {
+				if (identifierNode.get("text").asString().equals(identifier)) {
+					containsAnyReference = true;
+					break;
+				}
+			}
+			if (!containsAnyReference) {
+				res.add(node);
+			}
+		}
+		return res;
+	}
+
+	@Override
+	public List<Node> findNonTrivalExpressionsWithIdentifier(String programId, Long nodeId, String identifier) {
+		List<Node> allNonTrivialExpressions = this.findNonTrivalExpressions(programId, nodeId);
+		List<Node> res = new LinkedList<Node>();
+		for (Node node : allNonTrivialExpressions) {
+			List<Node> identifiers = this.findNonTrivialExpressionIdentifiers(programId, node.get("id").asLong());
+			boolean containsAnyReference = false;
+			for (Node identifierNode : identifiers) {
+				if (identifierNode.get("text").asString().equals(identifier)) {
+					containsAnyReference = true;
+					break;
+				}
+			}
+			if (containsAnyReference) {
+				res.add(node);
+			}
+		}
+		return res;
+	}
+
+	@Override
+	public List<Node> findControlFlowNodes(String programId) {
+		Transaction transaction = session.beginTransaction();
+		Query q1 = new Query(
+				"match(n)-[:FlowEdge]-(m) where n.programId=$programId and n.programId=m.programId return n,m",
+				parameters("programId", programId));
+		Result res = transaction.run(q1);
+		List<Node> out = new LinkedList<Node>();
+		while (res.hasNext()) {
+			Record record = res.next();
+			List<Pair<String, Value>> values = record.fields();
+			Pair<String, Value> n = values.get(0);
+			Node nodeValueN = (Node) n.value().asNode();
+			out.add(nodeValueN);
+		}
+		transaction.commit();
+		transaction.close();
+		return out;
+	}
+
+	@Override
+	public List<Node> findNonTrivalExpressionsWithIdentifier(String programId, String identifier) {
+		List<org.javatuples.Pair<Node, Node>> allNonTrivials = this.findNonTrivialExpressions(programId);
+		List<Node> res = new LinkedList<Node>();
+		for (org.javatuples.Pair<Node, Node> pair : allNonTrivials) {
+			Node node = pair.getValue1();
+			List<Node> identifiers = this.findNonTrivialExpressionIdentifiers(programId, node.get("id").asLong());
+			boolean containsAnyReference = false;
+			for (Node identifierNode : identifiers) {
+				if (identifierNode.get("text").asString().equals(identifier)) {
+					containsAnyReference = true;
+					break;
+				}
+			}
+			if (containsAnyReference) {
+				res.add(node);
+			}
+		}
+		return res;
+	}
+
+	@Override
+	public Node findProgramStart(String programId) {
+		Transaction transaction = session.beginTransaction();
+		Query q1 = new Query("match(n:SkipStmt) where n.text='START' and n.programId=$programId return n",
+				parameters("programId", programId));
+		Result res = transaction.run(q1);
+		Node out = null;
+		while (res.hasNext()) {
+			Record record = res.next();
+			List<Pair<String, Value>> values = record.fields();
+			Pair<String, Value> n = values.get(0);
+			Node nodeValueN = (Node) n.value().asNode();
+			out = nodeValueN;
+		}
+		transaction.commit();
+		transaction.close();
+		return out;
+	}
+
+	@Override
+	public Node findProgramEnd(String programId) {
+		Transaction transaction = session.beginTransaction();
+		Query q1 = new Query("match(n:SkipStmt) where n.text='END' and n.programId=$programId return n",
+				parameters("programId", programId));
+		Result res = transaction.run(q1);
+		Node out = null;
+		while (res.hasNext()) {
+			Record record = res.next();
+			List<Pair<String, Value>> values = record.fields();
+			Pair<String, Value> n = values.get(0);
+			Node nodeValueN = (Node) n.value().asNode();
+			out = nodeValueN;
+		}
+		transaction.commit();
+		transaction.close();
+		return out;
+	}
+
 }

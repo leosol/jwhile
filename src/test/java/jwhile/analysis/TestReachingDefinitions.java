@@ -1,20 +1,23 @@
-package jwhile.antlr4.visitors;
+package jwhile.analysis;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.javatuples.Pair;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.driver.types.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jwhile.ShowGuiTest;
+import jwhile.antlr4.analysis.Framework;
+import jwhile.antlr4.analysis.algorithms.Algorithm;
+import jwhile.antlr4.analysis.algorithms.AnalysisInformation;
+import jwhile.antlr4.analysis.algorithms.impl.ReachingDefinitions;
+import jwhile.antlr4.analysis.algorithms.impl.VeryBusyExpressions;
 import jwhile.antlr4.cfg.entities.Entity;
+import jwhile.antlr4.cfg.entities.Label;
 import jwhile.antlr4.cfg.entities.Program;
 import jwhile.antlr4.cfg.persistence.impl.Neo4jProgramPersistenceStore;
 import jwhile.antlr4.cfg.visitors.JWhileProgramParser;
@@ -23,12 +26,12 @@ import jwhile.antlr4.generated.WhileParser;
 import jwhile.antlr4.utils.StandardErrorListener;
 import jwhile.interpreter.TestAExp;
 
-public class TestNeo4jPersistence extends ShowGuiTest {
+public class TestReachingDefinitions extends ShowGuiTest {
 	private static Logger logger = LoggerFactory.getLogger(TestAExp.class);
-	private boolean SHOW_GUI = false;
+	private boolean SHOW_GUI = true;
 	private Neo4jProgramPersistenceStore store;
 
-	public TestNeo4jPersistence() {
+	public TestReachingDefinitions() {
 		String url = "neo4j://localhost:7687";
 		String user = "neo4j";
 		String password = "0123456789";
@@ -36,11 +39,11 @@ public class TestNeo4jPersistence extends ShowGuiTest {
 		this.store.openSession();
 	}
 
-	public String persistProgram() throws IOException, InterruptedException {
+	public Program persistProgram() throws IOException, InterruptedException {
 		this.store.clearDatabase();
 		// @formatter:off
 		String[] simpleStatements = {
-				"y = x; z = 1; while(y>1){z=z*y; y=y-1;}; y=0;"}; //a = 1; b = a; c = a + a; d = a + 1; e = 1 + a; f = 1 + 2 + 3;
+				"x=5;y=1;while(x>1){y=x*y;x=x-1;};"};
 		// @formatter:on
 
 		for (int i = 0; i < simpleStatements.length; i++) {
@@ -66,41 +69,16 @@ public class TestNeo4jPersistence extends ShowGuiTest {
 			prg.setAnalyst("JUnit Analyst");
 			store.persistNewProgram(prg);
 			logger.info("Finished Flow Visitor");
-			return prg.getProgramId();
+			return prg;
 		}
 		return null;
 	}
 
 	@Test
 	public void testProgramSearches() throws IOException, InterruptedException {
-		String programId = this.persistProgram();
-		List<Pair<Node, Node>> flow = this.store.findFlow(programId);
-		for (Pair<Node, Node> pair : flow) {
-			Node from = pair.getValue0();
-			Node to = pair.getValue1();
-			System.out.println(from.get("text")+"->"+to.get("text"));
-		}
-		List<Pair<Node, Node>> flowR = this.store.findFlowR(programId);
-		for (Pair<Node, Node> pair : flowR) {
-			Node from = pair.getValue0();
-			Node to = pair.getValue1();
-			System.out.println(from.get("text")+"->"+to.get("text"));
-		}
-		
-		List<Pair<Node, Node>> assims = this.store.findAssignments(programId);
-		for (Pair<Node, Node> pair : assims) {
-			Node from = pair.getValue0();
-			Node to = pair.getValue1();
-			System.out.println(from.get("text")+"->"+to.get("text"));
-		}
-		
-		List<Pair<Node, Node>> nonTrivials = this.store.findNonTrivialExpressions(programId);
-		for (Pair<Node, Node> pair : nonTrivials) {
-			Node from = pair.getValue0();
-			Node to = pair.getValue1();
-			System.out.println(from.get("text")+"->"+to.get("text"));
-		}
-		
-		System.out.println(flow);
+		Program program = this.persistProgram();
+		ReachingDefinitions algorithm = new ReachingDefinitions(program, store);
+		Framework<AnalysisInformation<Pair<Label, String>>> framework = new Framework<AnalysisInformation<Pair<Label,String>>>(program.getProgramId(), algorithm, store);
+		framework.analyzeProgram();
 	}
 }

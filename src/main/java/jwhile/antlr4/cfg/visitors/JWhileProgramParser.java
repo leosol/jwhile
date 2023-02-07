@@ -33,7 +33,6 @@ import jwhile.antlr4.generated.WhileParser.ProgramContext;
 import jwhile.antlr4.generated.WhileParser.StmtContext;
 import jwhile.antlr4.generated.WhileParser.StmtsContext;
 import jwhile.antlr4.generated.WhileParser.WhileStatementContext;
-import jwhile.antlr4.interpreter.Value;
 
 public class JWhileProgramParser extends WhileBaseVisitor<Entity> {
 
