@@ -40,54 +40,47 @@ public class Framework<T extends AnalysisInformation<?>> {
 		do {
 			table.checkPoint();
 			for (Node node : nodes) {
-				
+
 				Set<T> focusOfConcern = getFocusOfConcern(node);
 				Set<T> contraFocus = getContraFocusOfConcern(node);
-				logger.debug("Current node: "+ node.get("text")+" "+ node.labels()+" focus "+focusOfConcern+" contraFocus "+contraFocus);
+				logger.debug("Current node: " + node.get("text") + " " + node.labels() + " focus " + focusOfConcern
+						+ " contraFocus " + contraFocus);
 
 				if (isInExtremeEdges(node)) {
 					focusOfConcern.clear();
 					focusOfConcern.addAll(algorithm.getInitSet());
-					logger.debug("Current node in START|END: "+ node.get("text")+" "+ node.labels()+" focus "+focusOfConcern+" contraFocus "+contraFocus);
+					logger.debug("Current node in START|END: " + node.get("text") + " " + node.labels() + " focus "
+							+ focusOfConcern + " contraFocus " + contraFocus);
 				} else {
 					List<Pair<Node, Node>> nodesOfInterest = filterFlow(cfgForAnalysis, node);
 					for (Pair<Node, Node> pair : nodesOfInterest) {
 						Set<T> incomingContrafocus = getContraFocusOfConcern(pair.getValue0());
-						logger.debug("Referenced by: "+ pair.getValue0().get("text")+" "+ pair.getValue0().labels()+" incomingContrafocus "+incomingContrafocus);
+						logger.debug("Referenced by: " + pair.getValue0().get("text") + " " + pair.getValue0().labels()
+								+ " incomingContrafocus " + incomingContrafocus);
 						doMeetOperation(focusOfConcern, incomingContrafocus);
-						logger.debug("After MEET Operator: "+ node.get("text")+" "+ node.labels()+" focus "+focusOfConcern);
+						logger.debug("After MEET Operator: " + node.get("text") + " " + node.labels() + " focus "
+								+ focusOfConcern);
 					}
 				}
-				logger.debug("Before gen|kill: "+ node.get("text")+" "+ node.labels()+" contraFocus "+contraFocus);
+				logger.debug(
+						"Before gen|kill: " + node.get("text") + " " + node.labels() + " contraFocus " + contraFocus);
 				doGenKillOperation(contraFocus, focusOfConcern, table.getKill(node), table.getGen(node));
-				logger.debug("After gen|kill: "+ node.get("text")+" "+ node.labels()+" contraFocus "+contraFocus);
+				logger.debug(
+						"After gen|kill: " + node.get("text") + " " + node.labels() + " contraFocus " + contraFocus);
 				table.printTable();
 			}
 			table.printTable();
 		} while (!table.isStable());
 		table.printTable();
 	}
-	
+
 	private void initGenKill() {
 		List<Node> nodes = store.findControlFlowNodes(this.programId);
 		for (Node node : nodes) {
 			AnalysisTableEntry<T> entry = table.getEntry(node);
 			entry.setGen(this.algorithm.gen(node));
 			entry.setKill(this.algorithm.kill(node));
-//			Set<T> initEntry = new HashSet<T>();
-//			initEntry.addAll(this.algorithm.findCachedSuperset());
-//			entry.setEntry(initEntry);	
 		}
-//		List<Node> extremeEdges = this.algorithm.getExtremeEdges();
-//		for (Node node : extremeEdges) {
-//			AnalysisTableEntry<T> entry = table.getEntry(node);
-//			Set<T> initEntry = new HashSet<T>();
-//			Set<T> initExit = new HashSet<T>();
-//			initExit.addAll(this.algorithm.findCachedSuperset());
-//			initEntry.addAll(this.algorithm.findCachedSuperset());
-//			entry.setExit(initExit);			
-//			entry.setEntry(initEntry);
-//		}
 	}
 
 	private void doGenKillOperation(Set<T> contraFocus, Set<T> focusOfConcern, Set<T> kill, Set<T> gen) {
@@ -98,7 +91,9 @@ public class Framework<T extends AnalysisInformation<?>> {
 	}
 
 	private void doMeetOperation(Set<T> focusOfConcern, Set<T> incomingContrafocus) {
-		focusOfConcern.addAll(this.algorithm.findCachedSuperset());
+		if (focusOfConcern.size() == 0) {
+			focusOfConcern.addAll(this.algorithm.findCachedSuperset());
+		}
 		if (algorithm.getMeetOperator().equals(MeetOperator.MAY)) {
 			focusOfConcern.addAll(incomingContrafocus);
 		} else {

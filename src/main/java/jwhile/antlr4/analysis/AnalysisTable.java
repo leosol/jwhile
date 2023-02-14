@@ -50,12 +50,12 @@ public class AnalysisTable<T extends AnalysisInformation<? extends Comparable<?>
 
 	public void printTable() {
 		List<List<String>> rows = new LinkedList<>();
-		List<String> headers = Arrays.asList("Node", "GEN", "KILL", "ENTRY", "EXIT");
+		List<String> headers = Arrays.asList("My Label", "Node", "KILL", "GEN", "ENTRY", "EXIT", "PPA Label");
 		rows.add(headers);
 		Set<Entry<Node, AnalysisTableEntry<T>>> entries = this.map.entrySet();
 		for (Entry<Node, AnalysisTableEntry<T>> entry : entries) {
-			rows.add(Arrays.asList(entry.getKey().get("text").asString(), entry.getValue().getGenStr(),
-					entry.getValue().getKillStr(), entry.getValue().getEntryStr(), entry.getValue().getExitStr()));
+			rows.add(Arrays.asList(entry.getKey().get("intLabel")+"", entry.getKey().get("text").asString(), entry.getValue().getKillStr(),
+					entry.getValue().getGenStr(), entry.getValue().getEntryStr(), entry.getValue().getExitStr(), "?edit manually?"));
 		}
 		TablePrinter.formatAsTable(rows);
 	}

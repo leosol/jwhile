@@ -107,23 +107,4 @@ public class AvailableExpressions extends Algorithm<AnalysisInformation<String>>
 		return res;
 	}
 
-
-//	@Override
-//	public List<AnalysisInformation<String>> gen(Node n) {
-//		if(n.hasLabel("AssignmentStmt")) {
-//			
-//		}
-//		if(n.hasLabel("SkipStmt")) {
-//			return null;
-//		}
-//		
-//		return null;
-//	}
-//
-//	@Override
-//	public List<AnalysisInformation<String>> kill(Node n) {
-//		// TODO Auto-generated method stub
-//		return null;
-//	}
-
 }
